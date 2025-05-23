@@ -1,0 +1,66 @@
+
+:root {
+  --primary-color: #388E3C;
+  --primary-dark: #1B5E20;
+  --accent-color: #66BB6A;
+  --background: #F1F8E9;
+  --white: #FFFFFF;
+  --text-color: #2E2E2E;
+  --border-radius: 10px;
+  --font-main: 'Poppins', 'Segoe UI', sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-main);
+  background-color: var(--background);
+  color: var(--text-color);
+}
+
+.button-primary {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.button-primary:hover {
+  background-color: var(--primary-dark);
+}
+
+.input-box {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #CCC;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  background: var(--white);
+}
+
+.input-box:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(102,187,106,0.3);
+}
+
+.label-text {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+  display: block;
+}
+
+.card {
+  background: var(--white);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  max-width: 400px;
+  margin: auto;
+  text-align: center;
+}
