@@ -41,4 +41,14 @@ const router = createRouter({
   routes
 });
 
+router.beforeEach((to, from, next) => {
+  const cpf = localStorage.getItem('cpf');
+
+  if (to.path === '/perfil/beneficiario' && !cpf) {
+    return next('/');
+  }
+
+  next();
+});
+
 export default router;

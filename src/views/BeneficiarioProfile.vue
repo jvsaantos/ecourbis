@@ -14,20 +14,23 @@
 
       <!-- Ações Rápidas -->
       <div class="dashboard-actions">
-        
-        <button class="button-primary" @click="irPara('gerar-qrcode')">
+        <button class="button-primary" @click="irPara('GerarQrCode.vue')">
           Gerar QRCode
         </button>
       </div>
 
-      <!-- Histórico Recente -->
-      <div class="historico-section">
-        <h3 class="historico-title">Últimas Coletas</h3>
+      <!-- Histórico Completo -->
+      <div class="historico-section" v-if="coletas.length">
+        <h3 class="historico-title">Histórico de Coletas</h3>
         <ul class="historico-list">
-          <li v-for="(coleta, index) in coletasRecentes" :key="index">
-            {{ coleta.tipo }} - {{ coleta.peso }}kg (R$ {{ coleta.valor }})
+          <li v-for="(coleta, index) in coletas" :key="index">
+            {{ coleta.tipo }} - {{ coleta.peso }}kg (R$ {{ (coleta.peso * 2).toFixed(2) }})
           </li>
         </ul>
+      </div>
+
+      <div v-else class="historico-section">
+        <h3 class="historico-title">Nenhuma coleta registrada ainda.</h3>
       </div>
     </div>
   </div>
@@ -35,35 +38,76 @@
 
 <script setup>
 import HeaderBar from '../components/HeaderBar.vue';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 
 const router = useRouter();
 
-// Dados mockados (substituir por dados reais da API)
 const usuario = ref({
-  nome: "Maria Silva",
-  saldo: 150.75
+  nome: localStorage.getItem('nome') || 'Usuário',
+  saldo: 0,
 });
 
-const coletasRecentes = ref([
-  { tipo: "Plástico", peso: 2.5, valor: 5.00 },
-  { tipo: "Vidro", peso: 1.8, valor: 3.60 }
-]);
+const coletas = ref([]);
+const cpf = localStorage.getItem('cpf');
 
-const irPara = (rota) => {
-  router.push(`/${rota}`);
+if (!cpf) {
+  router.push('/');
+}
+
+const buscarDados = async () => {
+  try {
+    const { data } = await axios.get(`http://127.0.0.1:8000/api/resumo-materiais/${cpf}`);
+
+    usuario.value.nome = data.beneficiario || 'Usuário';
+
+    // Soma dos créditos
+    const totalPeso = data.materiais.reduce((acc, item) => acc + parseFloat(item.total_peso), 0);
+    usuario.value.saldo = totalPeso * 2;
+
+    // Se quiser exibir o histórico também:
+    coletas.value = data.materiais.map((item) => ({
+      tipo: item.tipo,
+      peso: parseFloat(item.total_peso),
+    }));
+  } catch (error) {
+    console.error('Erro ao buscar dados do beneficiário:', error);
+  }
 };
+
+onMounted(async () => {
+  buscarDados();
+  //  usuario.value.nome = localStorage.getItem('nome') || 'Usuário';
+  // const cpf = localStorage.getItem('cpf');
+
+  // try {
+  //   const resposta = await getResumoMateriais(cpf);
+  //   usuario.value.saldo = resposta.total_creditos ?? 0;
+  //   materiais.value = resposta.coletas ?? [];
+  // } catch (error) {
+  //   console.error('Erro ao buscar dados:', error);
+  // }
+});
 </script>
 
 <style scoped>
+.saldo-card {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
 .login-wrapper {
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* muda de center para flex-start */
-  min-height: calc(100vh - 64px); /* compensa o header fixo */
+  align-items: flex-start;
+  /* muda de center para flex-start */
+  min-height: calc(100vh - 64px);
+  /* compensa o header fixo */
   background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-  padding: 3rem 1rem 2rem; /* aumenta o padding-top para suavizar */
+  padding: 3rem 1rem 2rem;
+  /* aumenta o padding-top para suavizar */
   overflow-x: hidden;
   overflow-y: hidden;
 }
@@ -72,7 +116,7 @@ const irPara = (rota) => {
   background: white;
   padding: 2.5rem;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 500px;
   box-sizing: border-box;
@@ -125,6 +169,7 @@ const irPara = (rota) => {
   font-size: 1.1rem;
   color: #388E3C;
   margin-bottom: 0.5rem;
+  text-align: center;
 }
 
 .historico-list {

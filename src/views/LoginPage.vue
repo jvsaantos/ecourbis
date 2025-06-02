@@ -31,6 +31,8 @@
         </div>
 
         <button type="submit" class="button-primary">Entrar</button>
+
+        <p v-if="erro" class="login-error">{{ erro }}</p>
       </form>
 
       <div class="login-links">
@@ -44,36 +46,52 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { loginBeneficiario } from '../apis/auth'; // função da API
 
 const router = useRouter();
-
 const cpfCnpj = ref('');
 const password = ref('');
+const erro = ref('');
 
 const formatCpfCnpj = () => {
-  cpfCnpj.value = cpfCnpj.value.replace(/\D/g, '').slice(0, 14); // Apenas números, máximo 14 dígitos
+  cpfCnpj.value = cpfCnpj.value.replace(/\D/g, '').slice(0, 14); // Apenas números
 };
 
-const handleLogin = () => {
-  const length = cpfCnpj.value.length;
+const handleLogin = async () => {
+  erro.value = '';
 
-  if (length !== 11 && length !== 14) {
-    alert('Digite um CPF com 11 números ou um CNPJ com 14 números.');
-    return;
+  try {
+    const response = await loginBeneficiario(cpfCnpj.value, password.value);
+    
+    // Armazena localmente os dados (pode usar store depois)
+    localStorage.setItem('cpf', response.beneficiario.cpf);
+    localStorage.setItem('nome', response.beneficiario.nome);
+
+    // Redireciona
+    router.push('/select-profile');
+  } catch (err) {
+    erro.value = err.response?.data?.erro || 'Erro ao fazer login.';
   }
-
-  if (!password.value) {
-    alert('Por favor, digite sua senha.');
-    return;
-  }
-
-  console.log('Login realizado com:', cpfCnpj.value, password.value);
-
-  // 🔥 Aqui você pode colocar a lógica de autenticação com API futuramente
-
-  router.push('/select-profile');
 };
 </script>
+
+<style scoped>
+.login-error {
+  color: red;
+  margin-top: 10px;
+  font-weight: bold;
+}
+</style>
+
+
+<style scoped>
+.login-error {
+  color: red;
+  margin-top: 10px;
+  font-weight: bold;
+}
+</style>
+
 
 <style scoped>
 .login-wrapper {

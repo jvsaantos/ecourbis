@@ -9,11 +9,11 @@
         <!-- Tipo -->
         <div class="form-group">
           <label class="label-text">Tipo de Resíduo</label>
-          <select v-model="tipoResiduo" class="input-box" required>
+          <select v-model="residuoId" class="input-box" required>
             <option disabled value="">Selecione...</option>
-            <option value="Plástico">Plástico</option>
-            <option value="Vidro">Vidro</option>
-            <option value="Papel">Papel</option>
+            <option v-for="residuo in tiposResiduos" :key="residuo.id" :value="residuo.id">
+              {{ residuo.nome }}
+            </option>
           </select>
         </div>
 
@@ -21,30 +21,10 @@
         <div class="form-group">
           <label class="label-text">Peso</label>
           <div class="input-group">
-            <input
-              type="text"
-              v-model="pesoFormatado"
-              class="input-box"
-              @input="formatarPeso"
-              placeholder="0,00"
-              required
-            />
+            <input type="text" v-model="pesoFormatado" class="input-box" @input="formatarPeso" placeholder="0,00"
+              required />
             <span class="suffix">kg</span>
           </div>
-        </div>
-
-        <!-- CPF -->
-        <div class="form-group">
-          <label class="label-text">CPF do Beneficiário</label>
-          <input
-            type="text"
-            v-model="cpfBeneficiario"
-            class="input-box"
-            placeholder="Somente números"
-            @input="formatarCpf"
-            maxlength="11"
-            required
-          />
         </div>
 
         <button type="submit" class="button-primary">Confirmar Coleta</button>
@@ -57,7 +37,7 @@
     <div class="popup">
       <h3>Coleta Registrada!</h3>
       <p>
-        Você registrou <strong>{{ pesoFormatado }} kg</strong> de <strong>{{ tipoResiduo }}</strong>.
+        Você registrou <strong>{{ pesoFormatado }} kg</strong> de <strong>{{ nomeResiduoSelecionado }}</strong>.
       </p>
       <button class="button-primary" @click="fecharPopup">Fechar</button>
     </div>
@@ -66,62 +46,75 @@
 
 <script setup>
 import HeaderBar from '../components/HeaderBar.vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { registrarColeta } from '../apis/auth';
 
-const tipoResiduo = ref('');
+const router = useRouter();
+
+const tiposResiduos = [
+  { id: 1, nome: 'Plástico' },
+  { id: 2, nome: 'Vidro' },
+  { id: 3, nome: 'Papel' }
+];
+
+const residuoId = ref('');
 const pesoFormatado = ref('');
-const cpfBeneficiario = ref('');
 const mostrarPopup = ref(false);
 
-const formatarCpf = () => {
-  cpfBeneficiario.value = cpfBeneficiario.value.replace(/\D/g, '').slice(0, 11);
-};
+const cpfBeneficiario = localStorage.getItem('cpf');
+
+const nomeResiduoSelecionado = computed(() => {
+  const item = tiposResiduos.find(r => r.id === residuoId.value);
+  return item?.nome || '';
+});
 
 const formatarPeso = () => {
   let somenteNumeros = pesoFormatado.value.replace(/\D/g, '');
-
   if (somenteNumeros.length === 0) {
     pesoFormatado.value = '0,00';
     return;
   }
-
   while (somenteNumeros.length < 3) {
     somenteNumeros = '0' + somenteNumeros;
   }
-
-  const parteInteira = somenteNumeros.slice(0, somenteNumeros.length - 2);
+  const parteInteira = somenteNumeros.slice(0, -2);
   const parteDecimal = somenteNumeros.slice(-2);
-
   pesoFormatado.value = `${parseInt(parteInteira)}.${parteDecimal}`.replace('.', ',');
 };
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   const pesoNumero = parseFloat(pesoFormatado.value.replace(',', '.'));
+  if (!residuoId.value) {
+    alert('Selecione o tipo de resíduo.');
+    return;
+  }
   if (isNaN(pesoNumero) || pesoNumero <= 0) {
     alert('Digite um peso válido.');
     return;
   }
-  if (cpfBeneficiario.value.length !== 11) {
-    alert('CPF deve conter exatamente 11 dígitos.');
+  if (!cpfBeneficiario || cpfBeneficiario.length !== 11) {
+    alert('CPF inválido ou não encontrado no localStorage.');
     return;
   }
-
-  console.log('Coleta registrada:', {
-    tipo: tipoResiduo.value,
-    peso: pesoNumero,
-    cpf: cpfBeneficiario.value
-  });
-
-  mostrarPopup.value = true;
+  try {
+    await registrarColeta(cpfBeneficiario, residuoId.value, pesoNumero);
+    mostrarPopup.value = true;
+  } catch (error) {
+    console.error('Erro ao registrar coleta:', error.response?.data || error.message);
+    alert('Erro ao registrar coleta.');
+  }
 };
+
 
 const fecharPopup = () => {
   mostrarPopup.value = false;
-  tipoResiduo.value = '';
+  residuoId.value = '';
   pesoFormatado.value = '';
-  cpfBeneficiario.value = '';
+  router.push('/perfil/beneficiario');
 };
 </script>
+
 
 <style scoped>
 /* Layout */
@@ -138,7 +131,7 @@ const fecharPopup = () => {
   background: white;
   padding: 2.5rem;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 460px;
   text-align: center;
@@ -146,7 +139,7 @@ const fecharPopup = () => {
 
 .login-logo {
   width: 110px;
-  
+
 }
 
 .login-title {
@@ -210,7 +203,7 @@ const fecharPopup = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -221,7 +214,7 @@ const fecharPopup = () => {
   background: white;
   padding: 2rem;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   text-align: center;
   width: 90%;
   max-width: 400px;

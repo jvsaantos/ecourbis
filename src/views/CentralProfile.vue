@@ -80,13 +80,13 @@ import { ref, computed } from 'vue';
 
 const tiposResiduos = ref([
   { id: 1, nome: 'Plástico PET' },
-  { id: 2, nome: 'Alumínio' },
+  { id: 2, nome: 'Papel' },
   { id: 3, nome: 'Vidro Incolor' }
 ]);
 
 const residuosDisponiveis = ref([
   { id: 1, tipo: 'Plástico PET', quantidade: 150, precoPorKg: 2.50 },
-  { id: 2, tipo: 'Alumínio', quantidade: 80, precoPorKg: 5.20 },
+  { id: 2, tipo: 'Papel', quantidade: 80, precoPorKg: 5.20 },
   { id: 3, tipo: 'Vidro Incolor', quantidade: 200, precoPorKg: 0.80 }
 ]);
 
