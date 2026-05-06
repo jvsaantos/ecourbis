@@ -1,107 +1,97 @@
 <template>
-  <div class="login-wrapper">
-    <div class="login-card">
-      <img src="/logo_grafismo_preciso_transparente.png" alt="ECOURBIS Logo" class="login-logo" />
-      <h2 class="login-title">Cadastre-se</h2>
-      <p class="login-subtitle">Preencha os dados para criar sua conta</p>
-      <form @submit.prevent="register">
-        <div class="form-group">
-          <label class="label-text" for="name">Nome completo</label>
-          <input type="text" id="name" v-model="name" class="input-box" required />
-        </div>
-        <div class="form-group">
-          <label class="label-text" for="cpf">CPF</label>
-          <input type="text" id="cpf" v-model="cpf" class="input-box" required />
-        </div>
-        <div class="form-group">
-          <label class="label-text" for="email">E-mail</label>
-          <input type="email" id="email" v-model="email" class="input-box" required />
-        </div>
-        <div class="form-group">
-          <label class="label-text" for="password">Senha</label>
-          <input type="password" id="password" v-model="password" class="input-box" required />
-        </div>
-        <button type="submit" class="button-primary">Cadastrar</button>
+  <div class="page-wrapper" style="align-items:center; min-height:100vh;">
+    <div class="page-card page-card--sm">
+      <RouterLink to="/" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+        Voltar ao login
+      </RouterLink>
+
+      <img src="/logo_grafismo_preciso_transparente.png" alt="EcoUrbis" class="page-logo" />
+      <h2 class="page-title">Criar conta</h2>
+      <p class="page-subtitle">Preencha os dados para se cadastrar</p>
+
+      <form @submit.prevent="handleRegister" class="form-group">
+        <AppInput v-model="form.nome" label="Nome completo" placeholder="Seu nome" required />
+        <AppInput
+          v-model="form.cpf"
+          label="CPF"
+          placeholder="Somente números"
+          :maxlength="11"
+          @input="form.cpf = form.cpf.replace(/\D/g, '').slice(0, 11)"
+          required
+        />
+        <AppInput v-model="form.email" type="email" label="E-mail" placeholder="seu@email.com" required />
+        <AppInput v-model="form.senha" type="password" label="Senha" placeholder="Mínimo 6 caracteres" :minlength="6" required />
+
+        <div v-if="erro" class="alert alert--error" role="alert">{{ erro }}</div>
+        <div v-if="sucesso" class="alert alert--success" role="status">{{ sucesso }}</div>
+
+        <AppButton type="submit" :loading="loading" :full="true">
+          Cadastrar
+        </AppButton>
       </form>
+
+      <p class="auth-footer">
+        Já tem conta?
+        <RouterLink to="/" class="auth-link--highlight">Entrar</RouterLink>
+      </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-const name = ref('');
-const cpf = ref('');
-const email = ref('');
-const password = ref('');
-const register = () => {
-  console.log("Cadastro:", name.value, email.value);
+import { ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
+import AppInput from '../components/AppInput.vue';
+import AppButton from '../components/AppButton.vue';
+import { authService } from '../services/api';
+
+const router = useRouter();
+
+const form = reactive({ nome: '', cpf: '', email: '', senha: '' });
+const erro = ref('');
+const sucesso = ref('');
+const loading = ref(false);
+
+const handleRegister = async () => {
+  erro.value = '';
+  sucesso.value = '';
+  loading.value = true;
+  try {
+    await authService.register(form);
+    sucesso.value = 'Conta criada com sucesso! Redirecionando...';
+    setTimeout(() => router.push('/'), 1800);
+  } catch (err) {
+    erro.value = err.response?.data?.erro || 'Erro ao criar conta. Tente novamente.';
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
 <style scoped>
-.login-wrapper {
-  display: flex;
-  justify-content: center;
+.back-link {
+  display: inline-flex;
   align-items: center;
-  height: 100vh;
-  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-  padding: 1rem;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 1.5rem;
+  transition: color var(--transition);
 }
+.back-link:hover { color: var(--color-primary); text-decoration: none; }
 
-.login-card {
-  background: white;
-  padding: 2.5rem;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 420px;
+.auth-footer {
   text-align: center;
-  box-sizing: border-box;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-top: 1.25rem;
 }
 
-.login-logo {
-  width: 110px;
-  margin-bottom: 1.2rem;
-}
-
-.login-title {
-  margin: 0;
-  font-size: 1.5rem;
+.auth-link--highlight {
+  color: var(--color-primary);
   font-weight: 600;
-}
-
-.login-subtitle {
-  font-size: 0.95rem;
-  margin-bottom: 2rem;
-  color: #666;
-}
-
-.form-group {
-  text-align: left;
-  margin-bottom: 1.25rem;
-}
-
-.input-box {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-  box-sizing: border-box;
-}
-
-.button-primary {
-  background-color: #388E3C;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.button-primary:hover {
-  background-color: #1B5E20;
 }
 </style>

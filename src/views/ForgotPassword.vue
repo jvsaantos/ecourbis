@@ -1,92 +1,130 @@
 <template>
-  <div class="login-wrapper">
-    <div class="login-card">
-      <img src="/logo_grafismo_preciso_transparente.png" alt="ECOURBIS Logo" class="login-logo" />
-      <h2 class="login-title">Recuperar Senha</h2>
-      <p class="login-subtitle">Informe seu e-mail para receber o link de redefinição</p>
-      <form @submit.prevent="recover">
-        <div class="form-group">
-          <label class="label-text" for="email">E-mail cadastrado</label>
-          <input type="email" id="email" v-model="email" class="input-box" required />
-        </div>
-        <button type="submit" class="button-primary">Enviar link</button>
-      </form>
+  <div class="page-wrapper" style="align-items:center; min-height:100vh;">
+    <div class="page-card page-card--sm">
+      <RouterLink to="/" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+        Voltar ao login
+      </RouterLink>
+
+      <div class="icon-circle">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+      </div>
+
+      <h2 class="page-title">Recuperar senha</h2>
+      <p class="page-subtitle">Informe seu e-mail e enviaremos um link de redefinição</p>
+
+      <div v-if="!enviado">
+        <form @submit.prevent="handleSubmit" class="form-group">
+          <AppInput v-model="email" type="email" label="E-mail cadastrado" placeholder="seu@email.com" required />
+          <div v-if="erro" class="alert alert--error">{{ erro }}</div>
+          <AppButton type="submit" :loading="loading" :full="true">Enviar link</AppButton>
+        </form>
+      </div>
+
+      <div v-else class="success-state">
+        <div class="success-icon">✓</div>
+        <p class="success-text">
+          Link enviado para <strong>{{ email }}</strong>.<br/>
+          Verifique sua caixa de entrada.
+        </p>
+        <AppButton variant="secondary" :full="true" @click="enviado = false">
+          Reenviar link
+        </AppButton>
+      </div>
+
+      <p class="auth-footer">
+        Lembrou a senha?
+        <RouterLink to="/" class="auth-link--highlight">Entrar</RouterLink>
+      </p>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
+import AppInput from '../components/AppInput.vue';
+import AppButton from '../components/AppButton.vue';
+import { authService } from '../services/api';
+
 const email = ref('');
-const recover = () => {
-  console.log("Recuperação de senha para:", );
+const erro = ref('');
+const loading = ref(false);
+const enviado = ref(false);
+
+const handleSubmit = async () => {
+  erro.value = '';
+  loading.value = true;
+  try {
+    await authService.forgotPassword(email.value);
+    enviado.value = true;
+  } catch (err) {
+    erro.value = err.response?.data?.erro || 'Erro ao enviar e-mail. Tente novamente.';
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
 <style scoped>
-.login-wrapper {
-  display: flex;
-  justify-content: center;
+.back-link {
+  display: inline-flex;
   align-items: center;
-  height: 100vh;
-  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-  padding: 1rem;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 1.5rem;
+  transition: color var(--transition);
+}
+.back-link:hover { color: var(--color-primary); text-decoration: none; }
+
+.icon-circle {
+  width: 64px;
+  height: 64px;
+  background: var(--color-primary-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  color: var(--color-primary);
 }
 
-.login-card {
-  background: white;
-  padding: 2.5rem;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 420px;
-  text-align: center;
-  box-sizing: border-box;
-}
+.success-state { text-align: center; padding: 1rem 0; }
 
-.login-logo {
-  width: 110px;
-  margin-bottom: 1.2rem;
-}
-
-.login-title {
-  margin: 0;
+.success-icon {
+  width: 56px;
+  height: 56px;
+  background: #dcfce7;
+  color: var(--color-success);
+  border-radius: 50%;
   font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+}
+
+.success-text {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.auth-footer {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-top: 1.25rem;
+}
+
+.auth-link--highlight {
+  color: var(--color-primary);
   font-weight: 600;
-}
-
-.login-subtitle {
-  font-size: 0.95rem;
-  margin-bottom: 2rem;
-  color: #666;
-}
-
-.form-group {
-  text-align: left;
-  margin-bottom: 1.25rem;
-}
-
-.input-box {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-  box-sizing: border-box;
-}
-
-.button-primary {
-  background-color: #388E3C;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.button-primary:hover {
-  background-color: #1B5E20;
 }
 </style>

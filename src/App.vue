@@ -1,13 +1,7 @@
 <template>
-  <div id="app">
-    <router-view />
-  </div>
+  <RouterView v-slot="{ Component }">
+    <Transition name="fade" mode="out-in">
+      <component :is="Component" />
+    </Transition>
+  </RouterView>
 </template>
-
-<script setup>
-// Script vazio por enquanto
-</script>
-
-<style>
-@import './assets/styles.css';
-</style>

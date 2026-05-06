@@ -1,123 +1,90 @@
 <template>
-  <div class="login-wrapper">
-    <div class="login-card">
-      <img src="/logo_grafismo_preciso_transparente.png" alt="ECOURBIS Logo" class="login-logo" />
-      <h2 class="login-title">Redefinir Senha</h2>
-      <p class="login-subtitle">Insira sua nova senha abaixo</p>
+  <div class="page-wrapper" style="align-items:center; min-height:100vh;">
+    <div class="page-card page-card--sm">
+      <div class="icon-circle">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0110 0v4"/>
+        </svg>
+      </div>
 
-      <form @submit.prevent="handleReset">
-        <div class="form-group">
-          <label class="label-text" for="newPassword">Nova Senha</label>
-          <input 
-            type="password" 
-            id="newPassword" 
-            v-model="newPassword" 
-            class="input-box" 
-            required 
-            minlength="6"
-          />
-        </div>
+      <h2 class="page-title">Nova senha</h2>
+      <p class="page-subtitle">Escolha uma senha segura com pelo menos 6 caracteres</p>
 
-        <div class="form-group">
-          <label class="label-text" for="confirmPassword">Confirme a Senha</label>
-          <input 
-            type="password" 
-            id="confirmPassword" 
-            v-model="confirmPassword" 
-            class="input-box" 
-            required 
-            minlength="6"
-          />
-        </div>
+      <form @submit.prevent="handleReset" class="form-group">
+        <AppInput
+          v-model="novaSenha"
+          type="password"
+          label="Nova senha"
+          placeholder="Mínimo 6 caracteres"
+          :minlength="6"
+          required
+        />
+        <AppInput
+          v-model="confirmSenha"
+          type="password"
+          label="Confirmar nova senha"
+          placeholder="Repita a senha"
+          :error="senhasErro"
+          required
+        />
 
-        <button type="submit" class="button-primary">Salvar Nova Senha</button>
+        <div v-if="erro" class="alert alert--error">{{ erro }}</div>
+        <div v-if="sucesso" class="alert alert--success">{{ sucesso }}</div>
+
+        <AppButton type="submit" :loading="loading" :full="true">
+          Salvar nova senha
+        </AppButton>
       </form>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import AppInput from '../components/AppInput.vue';
+import AppButton from '../components/AppButton.vue';
+import { authService } from '../services/api';
 
 const router = useRouter();
-const newPassword = ref('');
-const confirmPassword = ref('');
+const novaSenha = ref('');
+const confirmSenha = ref('');
+const erro = ref('');
+const sucesso = ref('');
+const loading = ref(false);
 
-const handleReset = () => {
-  if (newPassword.value !== confirmPassword.value) {
-    alert('As senhas não coincidem!');
-    return;
+const senhasErro = computed(() =>
+  confirmSenha.value && novaSenha.value !== confirmSenha.value ? 'As senhas não coincidem' : ''
+);
+
+const handleReset = async () => {
+  if (senhasErro.value) return;
+  erro.value = '';
+  loading.value = true;
+  try {
+    const token = new URLSearchParams(window.location.search).get('token') || '';
+    await authService.resetPassword(token, novaSenha.value);
+    sucesso.value = 'Senha redefinida! Redirecionando...';
+    setTimeout(() => router.push('/'), 1800);
+  } catch (err) {
+    erro.value = err.response?.data?.erro || 'Erro ao redefinir senha.';
+  } finally {
+    loading.value = false;
   }
-  console.log('Senha redefinida para:', newPassword.value);
-  router.push('/login'); // Redireciona após sucesso
 };
 </script>
 
 <style scoped>
-.login-wrapper {
+.icon-circle {
+  width: 64px;
+  height: 64px;
+  background: var(--color-primary-light);
+  border-radius: 50%;
   display: flex;
-  justify-content: center;
   align-items: center;
-  height: 100vh;
-  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-  padding: 1rem;
-}
-
-.login-card {
-  background: white;
-  padding: 2.5rem;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 420px;
-  text-align: center;
-  box-sizing: border-box;
-}
-
-.login-logo {
-  width: 110px;
-  margin-bottom: 1.2rem;
-}
-
-.login-title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.login-subtitle {
-  font-size: 0.95rem;
-  margin-bottom: 2rem;
-  color: #666;
-}
-
-.form-group {
-  text-align: left;
-  margin-bottom: 1.25rem;
-}
-
-.input-box {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-  box-sizing: border-box;
-}
-
-.button-primary {
-  background-color: #388E3C;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.button-primary:hover {
-  background-color: #1B5E20;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  color: var(--color-primary);
 }
 </style>
